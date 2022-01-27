@@ -61,8 +61,22 @@ class GlobalEnvironment: ObservableObject {
     func receiveInput(calculatorButton: CalculatorButton) {
         switch calculatorButton {
         case .ac, .plusMinus, .percent:
-            expression = []
-            self.display = ""
+            if calculatorButton == .percent {
+                let tmp = (self.display as NSString).floatValue
+                self.display = String(tmp / 100)
+            } else if calculatorButton == .plusMinus {
+                let start = self.display.startIndex
+                let end = self.display.endIndex
+                if self.display[start] == "-" {
+                    let newStart = self.display.index(start, offsetBy: 1)
+                    self.display = String(self.display[newStart ... end])
+                } else {
+                    self.display = "-" + self.display
+                }
+            } else {
+                expression = []
+                self.display = "0"
+            }
         case .plus, .minus, .multiply, .divide, .equals:
             if calculatorButton == .equals {
                 calcInput()
@@ -80,44 +94,44 @@ class GlobalEnvironment: ObservableObject {
         }
     }
     
-    // MARK: Calculate Inputs by expression
+// MARK: Calculate Inputs by expression
     func calcInput() {
         if expression.count == 2 {
             switch expression.popLast() {
             case "-":
                 if let first = expression.popLast() {
-                    let a = (first as NSString).floatValue
-                    let b = (self.display as NSString).floatValue
-                    self.display = String(a - b)
+                    guard let a = Decimal(string: first) else { return }
+                    guard let b = Decimal(string: self.display) else { return }
+                    self.display = NSDecimalNumber(decimal: a - b).stringValue
                 }
-            case "*":
+            case "X":
                 if let first = expression.popLast() {
-                    let a = (first as NSString).floatValue
-                    let b = (self.display as NSString).floatValue
-                    self.display = String(a * b)
+                    guard let a = Decimal(string: first) else { return }
+                    guard let b = Decimal(string: self.display) else { return }
+                    self.display = NSDecimalNumber(decimal: a * b).stringValue
                 }
             case "/":
                 if let first = expression.popLast() {
                     if self.display == "0" {
                         self.display = "오류"
                     } else {
-                        let a = (first as NSString).floatValue
-                        let b = (self.display as NSString).floatValue
-                        self.display = String(a / b)
+                        guard let a = Decimal(string: first) else { return }
+                        guard let b = Decimal(string: self.display) else { return }
+                        self.display = NSDecimalNumber(decimal: a / b).stringValue
                     }
                 }
             default:
                 if let first = expression.popLast() {
-                    let a = (first as NSString).floatValue
-                    let b = (self.display as NSString).floatValue
-                    self.display = String(a + b)
+                    guard let a = Decimal(string: first) else { return }
+                    guard let b = Decimal(string: self.display) else { return }
+                    self.display = NSDecimalNumber(decimal: a + b).stringValue
                 }
             }
         }
     }
-    
 }
 
+// MARK: View
 struct ContentView: View {
     
     @EnvironmentObject var env: GlobalEnvironment
@@ -133,12 +147,14 @@ struct ContentView: View {
         
         ZStack (alignment: .bottom){
             Color.black.edgesIgnoringSafeArea(.all)
-            VStack (spacing: 12) {
+            VStack (spacing: 14) {
                 HStack {
                     Spacer()
                     Text(env.display).foregroundColor(.white)
-                        .font(.system(size: 64))
-                }.padding()
+                        .fontWeight(.thin)
+                        .font(.system(size: 90))
+                }
+                .padding(.trailing, 15)
                 ForEach(buttons, id: \.self) { row in
                     HStack {
                         ForEach(row, id: \.self) { button in
@@ -146,7 +162,9 @@ struct ContentView: View {
                         }
                     }
                 }
-            }.padding(.bottom)
+            }
+            .padding(.bottom, 45)
+            .padding(.trailing, 10)
         }
     }
 
@@ -160,24 +178,23 @@ struct CalculatorButtonView: View {
     
     var body: some View {
         Button(action: {
-            
             self.env.receiveInput(calculatorButton: button)
-            
         }) {
         Text(button.title)
-            .font(.system(size: 32))
-            .frame(width: self.buttonWidth(button), height: (UIScreen.main.bounds.width - 5 * 12) / 4)
+            .font(.system(size: 35))
+            .frame(width: self.buttonWidth(button), height: (UIScreen.main.bounds.width - 5 * 16) / 4)
                 .foregroundColor(.white)
                 .background(button.background)
-                .cornerRadius(30)
+                .cornerRadius(35)
         }
+        .padding(.leading, 8)
     }
     
     private func buttonWidth(_ button: CalculatorButton) -> CGFloat {
         if button == .zero {
-            return (UIScreen.main.bounds.width - 4 * 12) / 4 * 2
+            return (UIScreen.main.bounds.width - 4 * 16) / 4 * 2 + 12
         }
-        return (UIScreen.main.bounds.width - 5 * 12) / 4
+        return (UIScreen.main.bounds.width - 5 * 16) / 4
     }
 }
 
