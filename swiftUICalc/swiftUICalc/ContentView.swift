@@ -39,8 +39,6 @@ enum CalculatorButton: String {
     
     var background: Color {
         switch self {
-//        case .zero, .one, .two, .three, .four, .five, .six, .seven, .eight, .nine:
-//            return Color("green")
         case .ac, .plusMinus, .percent:
             return Color(.lightGray)
         case .plus, .minus, .multiply, .divide, .equals:
@@ -58,9 +56,66 @@ enum CalculatorButton: String {
 class GlobalEnvironment: ObservableObject {
 
     @Published var display = "0"
+    @Published var expression: [String] = []
+    
     func receiveInput(calculatorButton: CalculatorButton) {
-        self.display = calculatorButton.title
+        switch calculatorButton {
+        case .ac, .plusMinus, .percent:
+            expression = []
+            self.display = ""
+        case .plus, .minus, .multiply, .divide, .equals:
+            if calculatorButton == .equals {
+                calcInput()
+            } else {
+                expression.append(self.display)
+                expression.append(calculatorButton.title)
+                self.display = ""
+            }
+        default:
+            if self.display != "0" && self.display != "오류" {
+                self.display = self.display + calculatorButton.title
+            } else {
+                self.display = calculatorButton.title
+            }
+        }
     }
+    
+    // MARK: Calculate Inputs by expression
+    func calcInput() {
+        if expression.count == 2 {
+            switch expression.popLast() {
+            case "-":
+                if let first = expression.popLast() {
+                    let a = (first as NSString).floatValue
+                    let b = (self.display as NSString).floatValue
+                    self.display = String(a - b)
+                }
+            case "*":
+                if let first = expression.popLast() {
+                    let a = (first as NSString).floatValue
+                    let b = (self.display as NSString).floatValue
+                    self.display = String(a * b)
+                }
+            case "/":
+                if let first = expression.popLast() {
+                    if self.display == "0" {
+                        self.display = "오류"
+                    } else {
+                        let a = (first as NSString).floatValue
+                        let b = (self.display as NSString).floatValue
+                        self.display = String(a / b)
+                    }
+                }
+            default:
+                if let first = expression.popLast() {
+                    let a = (first as NSString).floatValue
+                    let b = (self.display as NSString).floatValue
+                    self.display = String(a + b)
+                }
+            }
+        }
+    }
+    
 }
 
 struct ContentView: View {
@@ -120,7 +175,7 @@ struct CalculatorButtonView: View {
     
     private func buttonWidth(_ button: CalculatorButton) -> CGFloat {
         if button == .zero {
-            return (UIScreen.main.bounds.width - 5 * 12) / 4 * 2
+            return (UIScreen.main.bounds.width - 4 * 12) / 4 * 2
         }
         return (UIScreen.main.bounds.width - 5 * 12) / 4
     }
@@ -128,6 +183,6 @@ struct CalculatorButtonView: View {
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView().environmentObject(GlobalEnvironment())
+        ContentView().environmentObject(GlobalEnvironment()).previewInterfaceOrientation(.portrait)
     }
 }
