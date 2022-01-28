@@ -57,6 +57,7 @@ class GlobalEnvironment: ObservableObject {
 
     @Published var display = "0"
     @Published var expression: [String] = []
+    @Published var wasOperator: Int = 0
     
     func receiveInput(calculatorButton: CalculatorButton) {
         switch calculatorButton {
@@ -78,17 +79,21 @@ class GlobalEnvironment: ObservableObject {
                 self.display = "0"
             }
         case .plus, .minus, .multiply, .divide, .equals:
+            wasOperator = 1
             if calculatorButton == .equals {
                 calcInput()
             } else {
+                if expression.count == 2 {
+                    calcInput()
+                }
                 expression.append(self.display)
                 expression.append(calculatorButton.title)
-                self.display = ""
             }
         default:
-            if self.display != "0" && self.display != "오류" {
+            if self.display != "0" && self.display != "오류" && wasOperator == 0 {
                 self.display = self.display + calculatorButton.title
             } else {
+                wasOperator = 0
                 self.display = calculatorButton.title
             }
         }
@@ -157,13 +162,13 @@ struct ContentView: View {
                 .gesture(DragGesture(minimumDistance: 20, coordinateSpace: .global)
                             .onEnded { value in
                                 let horizontalAmount = value.translation.width as CGFloat
-                                let verticalAmount = value.translation.height as CGFloat
-                                
-                                if abs(horizontalAmount) > abs(verticalAmount) {
-                                    if horizontalAmount > 0 {
+                                if horizontalAmount > 0 {
+                                    if env.display.count > 1 {
                                         let start = env.display.startIndex
                                         let end = env.display.index(start, offsetBy: env.display.count - 1)
                                         env.display = String(env.display[start ..< end])
+                                    } else {
+                                        env.display = "0"
                                     }
                                 }
                             })
