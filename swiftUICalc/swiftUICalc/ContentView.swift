@@ -129,6 +129,13 @@ class GlobalEnvironment: ObservableObject {
             }
         }
     }
+    
+    func deleteDisplay() {
+        let start = self.display.startIndex
+        let end = self.display.index(start, offsetBy: -1)
+        self.display = String(self.display[start ..< end])
+    }
+    
 }
 
 // MARK: View
@@ -147,6 +154,19 @@ struct ContentView: View {
         
         ZStack (alignment: .bottom){
             Color.black.edgesIgnoringSafeArea(.all)
+                .gesture(DragGesture(minimumDistance: 20, coordinateSpace: .global)
+                            .onEnded { value in
+                                let horizontalAmount = value.translation.width as CGFloat
+                                let verticalAmount = value.translation.height as CGFloat
+                                
+                                if abs(horizontalAmount) > abs(verticalAmount) {
+                                    if horizontalAmount > 0 {
+                                        let start = env.display.startIndex
+                                        let end = env.display.index(start, offsetBy: env.display.count - 1)
+                                        env.display = String(env.display[start ..< end])
+                                    }
+                                }
+                            })
             VStack (spacing: 14) {
                 HStack {
                     Spacer()
@@ -182,6 +202,7 @@ struct CalculatorButtonView: View {
         }) {
         Text(button.title)
             .font(.system(size: 35))
+            .multilineTextAlignment(.leading)
             .frame(width: self.buttonWidth(button), height: (UIScreen.main.bounds.width - 5 * 16) / 4)
                 .foregroundColor(.white)
                 .background(button.background)
