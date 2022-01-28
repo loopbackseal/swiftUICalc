@@ -69,7 +69,7 @@ class GlobalEnvironment: ObservableObject {
                 let end = self.display.endIndex
                 if self.display[start] == "-" {
                     let newStart = self.display.index(start, offsetBy: 1)
-                    self.display = String(self.display[newStart ... end])
+                    self.display = String(self.display[newStart ..< end])
                 } else {
                     self.display = "-" + self.display
                 }
